@@ -33,9 +33,18 @@ private
   def env_config
     db_env.inject({}) do |a, (env, config)|
       # Rails 4 compatibility
-      base = ActiveRecord::Base.const_defined?(:ConnectionSpecification) ? ActiveRecord::Base : ActiveRecord::ConnectionAdapters
-      resolver = base::ConnectionSpecification::Resolver.new(config, {})
-      a[env.match(DB_URL_MATCHER)[1].downcase] = resolver.spec.config; a
+      base = ActiveRecord::Base.const_defined?(:ConnectionSpecification) ?
+        ActiveRecord::Base::ConnectionSpecification :
+        ActiveRecord::ConnectionAdapters::ConnectionSpecification
+      # resolver changed in >4.1
+      if base.const_defined?(:ConnectionUrlResolver)
+        config_hash = base::ConnectionUrlResolver.new(config).to_hash
+      else
+         resolver = base::ConnectionSpecification::Resolver.new(config, {})
+         config_hash = resolver.spec.config
+      end
+
+      a[env.match(DB_URL_MATCHER)[1].downcase] = config_hash; a
     end
   end
 
