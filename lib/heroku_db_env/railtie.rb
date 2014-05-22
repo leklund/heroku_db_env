@@ -5,9 +5,6 @@ module HerokuDbEnv
     initializer :initialize_heroku_db_env, {:group => :default, :before => "active_record.initialize_database"} do |app|
       db_config = HerokuDbEnv.build_db_config(app.config.database_configuration)
 
-      if db_config.nil?
-        ENV["#{Rails.env.upcase}_DATABASE_URL"] = ENV['DATABASE_URL']
-      end
       # force active_record to use the db config instead of the db url
       ENV['DATABASE_URL'] = nil
 
@@ -21,6 +18,9 @@ module HerokuDbEnv
 class << self
 
   def build_db_config(default_config = {})
+    if default_config == {}
+      ENV["#{Rails.env.upcase}_DATABASE_URL"] = ENV['DATABASE_URL']
+    end
     heroku_config = load_heroku_db_config(Rails.root.join('config/heroku_database.yml'))
     overlay_configs(default_config, heroku_config, env_config)
   end
